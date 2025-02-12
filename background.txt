@@ -1,1 +1,21 @@
-*** this is all the information to run the script in the background 
+*** this is all the information to run the script in the background ***
+
+This is run on MacOS using native launch agents 
+
+* give launch agent perms:
+chmod 644 ~/Library/LaunchAgents/com.username.organizedownloads.plist
+
+* load launch agent:
+launchctl load ~/Library/LaunchAgents/com.username.organizedownloads.plist
+
+* running check 
+launchctl list | grep organizedownloads
+
+in case of failure 
+* unload launch agent:
+launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.username.organizedownloads.plist
+launchctl remove com.username.organizedownloads
+
+quick reload = 
+1. launchctl unload ~/Library/LaunchAgents/com.username.organizedownloads.plist
+2. launchctl load ~/Library/LaunchAgents/com.username.organizedownloads.plist

@@ -1,18 +1,36 @@
 import os
 import shutil
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+import time
 
 # Directory paths
 source_dir = "/Users/brandoncarris/Downloads"
-destination_dirs = {
-    "/Users/brandoncarris/sorter-destinations/archives": [".zip", ".rar", ".7z"],
-    "/Users/brandoncarris/sorter-destinations/audio": [".wav", ".mp3"],
-    "/Users/brandoncarris/sorter-destinations/books": [".pdf", ".epub", ".mobi"],
-    "/Users/brandoncarris/sorter-destinations/documents": [".pdf", ".docx", ".txt", ".xlsx"],
-    "/Users/brandoncarris/sorter-destinations/html": [".html"],
-    "/Users/brandoncarris/sorter-destinations/images": [".jpg", ".png", ".jpeg", ".gif"],
-    "/Users/brandoncarris/sorter-destinations/videos": [".mp4", ".avi", ".mkv"],
+destination_dirs = { # updated to organize based on file extension rather than overarching folders 
+
+    # documents 
+    "/Users/brandoncarris/sorter-destinations/documents/pdf": [".pdf"],
+    "/Users/brandoncarris/sorter-destinations/documents/epub": [".epub"],
+    "/Users/brandoncarris/sorter-destinations/documents/docx": [".docx"],
+    "/Users/brandoncarris/sorter-destinations/documents/txt": [".txt"],
+    "/Users/brandoncarris/sorter-destinations/documents/xlsx": [".xlsx"],
+    # misc
+    "/Users/brandoncarris/sorter-destinations/misc/webp": [".webp"],
+    "/Users/brandoncarris/sorter-destinations/misc/html": [".html"],
+    # image
+    "/Users/brandoncarris/sorter-destinations/image/jpg": [".jpg"],
+    "/Users/brandoncarris/sorter-destinations/image/png": [".png"],
+    "/Users/brandoncarris/sorter-destinations/image/jpeg": [".jpeg"],
+    "/Users/brandoncarris/sorter-destinations/image/gif": [".gif"],
+    # audio
+    "/Users/brandoncarris/sorter-destinations/audio/wav": [".wav"],
+    "/Users/brandoncarris/sorter-destinations/audio/mp3": [".mp3"],
+    # video
+    "/Users/brandoncarris/sorter-destinations/video/mp4": [".mp4"],
+    "/Users/brandoncarris/sorter-destinations/video/avi": [".avi"],
+    "/Users/brandoncarris/sorter-destinations/video/mkv": [".mkv"],
+    # compressed
+    "/Users/brandoncarris/sorter-destinations/compressed/zip": [".zip"],
+    "/Users/brandoncarris/sorter-destinations/compressed/rar": [".rar"],
+    "/Users/brandoncarris/sorter-destinations/compressed/7z": [".7z"],
 }
 uncategorized_folder = "/Users/brandoncarris/sorter-destinations/uncategorized"
 
@@ -22,40 +40,44 @@ for folder in destination_dirs.keys():
 os.makedirs(uncategorized_folder, exist_ok=True)
 
 # Define event handler
-class FileHandler(FileSystemEventHandler):
-    def on_created(self, event):
-        if not event.is_directory:  # Ignore directories
-            file_path = event.src_path
-            filename = os.path.basename(file_path)
-            file_ext = os.path.splitext(filename)[1].lower()
+def organize_files():
+    for filename in os.listdir(source_dir):
+        file_path = os.path.join(source_dir, filename)
 
-            categorized = False
-            for folder, extensions in destination_dirs.items():
-                if file_ext in extensions:
-                    destination_path = os.path.join(folder, filename)
-                    if not os.path.exists(destination_path):  # Avoid overwriting
-                        shutil.move(file_path, destination_path)
-                        print(f"Moved {filename} to {folder}")
-                    categorized = True
-                    break
+        # Skip directories
+        if os.path.isdir(file_path):
+            continue
 
-            if not categorized:
-                destination_path = os.path.join(uncategorized_folder, filename)
+        file_ext = os.path.splitext(filename)[1].lower()
+        categorized = False
+
+        # Move file to correct category
+        for folder, extensions in destination_dirs.items():
+            if file_ext in extensions:
+                destination_path = os.path.join(folder, filename)
                 if not os.path.exists(destination_path):  # Avoid overwriting
                     shutil.move(file_path, destination_path)
-                    print(f"Moved {filename} to Uncategorized")
+                    print(f"Moved {filename} to {folder}")
+                categorized = True
+                break
 
-# Set up observer
-event_handler = FileHandler()
-observer = Observer()
-observer.schedule(event_handler, path=source_dir, recursive=False)
+        # If no matching category, move to Uncategorized
+        if not categorized:
+            destination_path = os.path.join(uncategorized_folder, filename)
+            if not os.path.exists(destination_path):  # Avoid overwriting
+                shutil.move(file_path, destination_path)
+                print(f"Moved {filename} to Uncategorized")
 
-# Start observer
-observer.start()
-print(f"Monitoring folder: {source_dir}")
+
+
+# Run periodically
+INTERVAL = 60  # Check every 60 seconds
+
+print(f"Monitoring {source_dir} every {INTERVAL} seconds...")
+
 try:
     while True:
-        pass  # Keep script running
+        organize_files()
+        time.sleep(INTERVAL)  # Sleep before next scan
 except KeyboardInterrupt:
-    observer.stop()
-observer.join()
+    print("Script stopped by user.")
